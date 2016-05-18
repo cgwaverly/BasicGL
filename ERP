@@ -1,0 +1,216 @@
+/*
+ * Written by: Chris Banks / cgwaverly
+ * 
+ * Ledger has basic functionality to write a 2-line journal and produce very high level financial statements.
+ * Based on using various arrays in ArrayList for each journal element. I'll look for better ways to achieve this (SQL).
+ *
+ * To do: 
+ * -add I/O to save GL state.
+ * -create mySQL version
+ * -add users
+ * -add non-terminal presentation
+ * -add multi-line journals
+ * -add user approvals
+ * -add search functionality to find transactions
+ * -invoice module
+ * -gl accounts
+ * 
+ * 
+ */
+
+package erpMain;
+import java.util.Scanner;
+
+public class ERP {
+	
+	private static int entryNumber = 1;
+	private boolean quit = false;
+	
+	enum fsClass {ASSET, LIABILITY, EQUITY, INCOME, EXPENDITURE};
+	
+	public boolean status()
+	{
+		return quit;
+	}
+	
+	public static int getEntry()
+	{
+		return entryNumber++;
+	}
+	
+	public static int getLastJN()
+	{
+		return entryNumber-1;
+	}
+	
+	public Entry makeEntry()
+	{
+		double debit = 0;
+		double credit =0;
+		int day=0;
+		int month =0;
+		int year=0;
+		JDate jDate;
+		String dclassification ="";
+		String dsubClass ="";
+		String ddescription ="";
+		String cclassification ="";
+		String csubClass ="";
+		String cdescription ="";
+		fsClass cclass,dclass;
+		
+		System.out.println("Please make an entry:");
+		Scanner s = new Scanner(System.in);
+		
+		
+		System.out.println("Journal Date (Day):");
+		day = s.nextInt();
+		System.out.println("Journal Date (Month):");
+		month = s.nextInt();
+		System.out.println("Journal Date (Year):");
+		year = s.nextInt();
+		jDate = new JDate(day,month,year);
+		s.nextLine();
+		
+		System.out.println("Debit value:");
+		debit = s.nextDouble();
+		s.nextLine();
+		
+		System.out.println("Journal description:");
+		ddescription = s.nextLine();
+
+		System.out.println("Journal classification (Choose: [I] Income; [E] Expenditure; [A] Asset; [L] Liability; [Q] Equity):");
+		dclassification = s.nextLine();
+		dclass = glClass(dclassification);
+		
+		System.out.println("Journal Account:");
+		dsubClass = s.nextLine();
+		
+		System.out.println("Credit value:");
+		credit = s.nextDouble();
+		s.nextLine();
+		System.out.println("Journal description:");
+		cdescription = s.nextLine();
+		
+		System.out.println("Journal classification (Choose: [I] Income; [E] Expenditure; [A] Asset; [L] Liability; [Q] Equity):");
+		cclassification = s.nextLine();
+		cclass = glClass(cclassification);
+		
+		System.out.println("Journal Account:");
+		csubClass = s.nextLine();
+		
+		Entry ent = new Entry(debit, credit, dclass, dsubClass, ddescription, cclass, csubClass, cdescription, jDate);
+
+		s.close();
+		return ent;
+	}
+	
+	public static fsClass glClass(String classification)
+	{
+		if(classification.equalsIgnoreCase("i"))
+				return fsClass.INCOME;
+
+		if(classification.equalsIgnoreCase("e"))
+				return fsClass.EXPENDITURE;
+		
+		if(classification.equalsIgnoreCase("a"))
+				return fsClass.ASSET;
+
+		if(classification.equalsIgnoreCase("l"))
+				return fsClass.LIABILITY;
+		
+		if(classification.equalsIgnoreCase("q"))
+				return fsClass.EQUITY;
+		
+		else
+			System.out.println("Invalid type - assumed asset.");
+			return fsClass.ASSET; // Need a fix here.
+	}
+	
+	public static void finStatements(GeneralLedger gl)
+	{
+		// add code for financial year
+
+		System.out.println("BALANCE SHEET\n");
+		
+		System.out.print("ASSETS     \t");
+		System.out.printf("%8.2f\n", gl.fsClassTotal(fsClass.ASSET));
+		System.out.println();
+		
+		System.out.print("LIABILITIES\t");
+		System.out.printf("%8.2f\n", gl.fsClassTotal(fsClass.LIABILITY));
+		System.out.println();
+		
+		System.out.print("EQUITY     \t");
+		System.out.printf("%8.2f\n", gl.fsClassTotal(fsClass.EQUITY));
+		System.out.println();
+		
+		System.out.println("INCOME STATEMENT\n");
+		
+		System.out.print("INCOME     \t");
+		System.out.printf("%8.2f\n", gl.fsClassTotal(fsClass.INCOME));
+		System.out.println();
+	
+		System.out.print("EXPENDITURE\t");
+		System.out.printf("%8.2f\n", gl.fsClassTotal(fsClass.EXPENDITURE));
+		System.out.println();
+	}
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+		GeneralLedger gl = new GeneralLedger();
+		Scanner s = new Scanner(System.in);
+		gl.initArrays();
+		
+		System.out.println("Welcome to the GL");
+		
+		while(gl.status()==false)
+		{
+		System.out.println();
+		System.out.println("What would you like to do?");
+		System.out.println("Press [E] to make a journal entry;");
+		System.out.println("Press [R] to run a detailed ledger report;");
+		System.out.println("Press [F] to produce summary financial statements.");
+		System.out.println("Press [X] to quit.");
+		String userChoice = s.next();
+		
+		if(userChoice.equalsIgnoreCase("e"))
+		{
+		Entry ent = gl.makeEntry();
+		
+		gl.setDebit(ent);
+		gl.setCredit(ent);
+		gl.setJDate(ent);
+		gl.setdClass(ent);
+		gl.setdSubClass(ent);
+		gl.setdDesc(ent);
+		gl.setcClass(ent);
+		gl.setcSubClass(ent);
+		gl.setcDesc(ent);
+		}
+		
+		if(userChoice.equalsIgnoreCase("r"))
+		{
+		System.out.println("The Full GL Detail Report:");
+		gl.printDetail();
+		}
+		
+		if(userChoice.equalsIgnoreCase("f"))
+		{
+			finStatements(gl);
+		}
+		
+		if(userChoice.equalsIgnoreCase("x"))
+		{
+			System.out.println("Thanks for using the GL.");
+			System.exit(0);
+		}
+	
+		else
+			System.out.println("Invalid command. Please try again.");
+		}
+		s.close();
+	}
+
+}
